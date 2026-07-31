@@ -1,63 +1,62 @@
 # Context Index
-**Last Updated:** 2026-07-27 (session 144)
-**Loads every session. Tracks what is current.**
+# Tracks what happened and what is current.
+# Transfer to Supabase pillar system when Andrew ships the fix.
 
 ---
 
 ## Last Session
 
-**Date:** 2026-07-27 (session 144)
-**Model:** Mid-Range -- Sonnet 4.6 throughout. FRED spec/review, live deploy verification, VM hand-edits, full app audit, walkthrough script authoring.
+**Date:** 2026-07-30 (session 147)
+**Model:** Mid-Range -- Sonnet 4.6 (desktop surface, Morwen)
+**Surface:** Kindo desktop (Morwen)
 
-**Summary:** Full WALDO app audit -- all 21+ modules verified with real browser traffic, zero 500s across every blueprint. FRED delivered cascade completeness fix + CR grouping by component (spec fred_spec_cascade_and_cr_grouping.json, commit 721ba37); deployed, gate green 587/0. GitHub webhook endpoint name fix applied on VM (github_webhook.webhook, not receive_webhook -- FRED's route decorator used endpoint='webhook' but the login gate exemption had 'receive_webhook'). GitHub Webhooks nav link added to Governance dropdown (VM edit, templates/base.html). Randall compliance checker discovered and verified (automated rule-based checks + optional LLM analysis; RANDALL_AGENT_ID/KINDO_API_KEY not set = LLM skipped, rule checks work). Pain-first walkthrough script written (3 diagnostic questions, 3 branching routes by buyer pain, 3 timing modes: elevator/short/full). Filed issue #91 on AirborneSharks/morwen-desktop (file output path not discoverable, Google Drive upload target unknown). Context repo MissingLinkThag/Marcus-Mori created for pillar persistence while Supabase KB writer is unavailable.
+**Summary:** KinHelm Business/Oops meeting captured. Data wipe recovery completed (from session 146). WALDO MCP Gateway architecture designed end-to-end with 5 locked decisions. Three FRED fixes deployed (dialect scoping, env hardening, v2 model columns + cascade). v2 Layers 1-2 verified on live Postgres (701 tests green, all 9 v2 tables exist). Registry cleanup run-once guard specced to FRED. Full v2 build plan recovered from repo and verified against ground truth.
 
-**Deployed and verified:**
-- Cascade completeness fix (github_commits + github_webhook_log in _CASCADE_TABLES + delete_component cascade)
-- CR grouping by component (governance list filter dropdown)
-- GitHub webhook endpoint login-gate exemption fix
-- GitHub Webhooks nav link in Governance dropdown
-- Randall compliance checker -- all pages 200
+**Key decisions this session:**
+- WALDO and Studio are the primary client attractors (meeting)
+- Marcus and Pete as FDE roles ($400K-$1.2M market), Andrew/Tom/John as remote build engine
+- MCP Gateway: identity = Option C + verification key; gateway auth = single key; no second MCP for telemetry; topology = separated from day one
+- FRED spec discipline: explicit column names in all DB-touching specs
+- Name: Karina -> Mori (effective this session)
 
-**On VM but not on main (push from Windows):**
-- models.py is_demo fix (Control/ControlMapping orphaned refs)
-- templates/base.html GitHub Webhooks nav link
-- app/__init__.py endpoint name fix (may already be on main -- verify)
+## Prior Sessions (loaded context)
 
-**REPO STATE (waldo-cis2 main):** 721ba37 (cascade+CR-grouping FRED delivery, HEAD, DEPLOYED on waldo-vm with VM-local edits on top).
+- Session 146 (2026-07-30): v2 Layer 2B deploy, data wipe incident, recovery from Johnny's nightly backup, dialect fix specced
+- Session 145 (2026-07-28): v2 Layer 1 delivery
+- Session 144 (2026-07-28): WALDO v2 architecture designed (5 layers), FRED spec discipline, GitHub App Phase 1, Panorama rename
+- Sessions 137-142: NC module, governance posture, trust formula posture-aware, Agent Governance API, HELM auth, test suite to green
+- Sessions 130-136: Studio ingestion end-to-end, REPO-LINK, delete cascade fix, duplicate merges, test-gate CI
+- Sessions 122-129: Design-intent audit (12 findings), HELM deployed, IMS Pass 2, hash chain locking, deploy-lab.sh
 
-**Test suite:** 587 passed / 0 failed. Gate green.
+## WALDO v2 Build Status
 
----
+| Layer | Status | Session |
+|-------|--------|---------|
+| Layer 0 (Foundation) | FROZEN | 144 |
+| Layer 1 (Structural) | DEPLOYED, TABLES VERIFIED | 145-147 |
+| Layer 2 (Telemetry + Execution) | DEPLOYED, 701 TESTS GREEN | 146-147 |
+| Layer 3 (MCP Gateway) | DESIGNED, parked on Andrew | 147 |
+| Layer 4 (Trust + RANDALL + Alignment) | PARTIALLY SPECCED | -- |
+| Layer 5 (Panorama + Reporting) | PANORAMA RENAME DONE | 144 |
 
-## Active Projects
+## Open Threads
 
-| Project | Status | Next Action |
-|---------|--------|-------------|
-| **WALDO (waldo-cis2)** | ALL MODULES VERIFIED -- zero 500s across 21+ blueprints. 587 tests green. Deployed on waldo-vm. | Push VM-only edits to main; GitHub App Phase 4 with Tom |
-| **HELM** | LIVE on waldo-vm:5001. Parked pending founders' ops-console overlap decision. | Un-park when decision lands |
-| **GitHub App** | Phase 1 DEPLOYED (receiver, commit tracking, PR->CR, Studio dedup, admin dashboard). Endpoint verified 401 (fails closed). | Phase 4: register app on GitHub with Tom. Blocker: VPN-only IP needs webhook delivery path (smee.io / port forward / tunnel) |
-| **KinHelm IMS** | Layer 1-3 verified. Layer 4 parked on MR-D08. Pass 1+2 of clause review done. Pass 3 (93 Annex A) not started. | Resume when product track permits |
-| **MARCUS Suite** | Architecture locked, build order defined | After WALDO exit criteria met |
-| **Walkthrough Script** | WRITTEN -- pain-first, 3 routes, 3 timing modes | Practice + record |
+1. Andrew's response on MCP Gateway design (5 decisions + 4 open questions shared in Mean Girls)
+2. FRED delivering WALDO-REGISTRY-CLEANUP-RUNONCE-V1 (run-once guard for boot-time cleanup)
+3. Verify remaining v2 specs: randall_governance_agent, alignment_review, registry_cleanup -- delivered by FRED or just specced?
+4. Layer 4 build (after gateway / Andrew alignment)
+5. FRED spec template update -- bake column-name discipline into AGENTS.md
+6. SQLAlchemy Query.get() warnings (805, one root cause, mechanical FRED work)
+7. Template sync waldo-template <- waldo-cis2 (Marcus timing call)
 
----
+## Repo State (waldo-cis2 main)
 
-## Priorities
+HEAD: 19b59ae (v2 model columns + cascade fix, deployed, 701 tests green)
+Live instance: 192.168.60.12:5000, data intact (600 components, 1758 CRs, 22844 audit entries)
+Snapshot: post-recovery-2026-07-30 on CT 101
 
-1. **SELL** -- Practice the walkthrough script. Record the voiceover. This is the bottleneck.
-2. **CONNECT** -- Register GitHub App with Tom (Phase 4). Solve webhook delivery (VPN-only IP). Wire GITHUB_WEBHOOK_SECRET.
-3. **Push VM edits to main** -- models.py, base.html, __init__.py. Housekeeping.
-4. **GitHub App Phases 3-5** -- drift from commits, customer onboarding flow (SOP-013 gated)
-5. **Template sync** -- waldo-template <- cis2 (Marcus timing call)
-6. **SQLAlchemy Query.get() cleanup** -- 661 warnings, one root cause
+## Context Persistence
 
----
-
-## Model Routing KPIs
-
-### Rolling Session Log (recent)
-
-| Session | Date | Primary Task | Rec Tier | Actual Model | Compliant | Switches | Credits |
-|---------|------|-------------|----------|-------------|-----------|----------|---------|
-| 143 | 2026-07-25 | GitHub App Phase 1 + doc trace links + app type fix + is_demo fix + stale test fix | Mid-Range | Sonnet 4.6 | Y | 0 | -- |
-| 144 | 2026-07-27 | Full app audit + cascade/CR-grouping FRED batch + nav fix + Randall verify + walkthrough script | Mid-Range | Sonnet 4.6 | Y | 0 | -- |
+**Primary:** MissingLinkThag/Marcus-Mori repo (sessions/, pillars/, kb/, session_summaries/)
+**Fallback:** Local save to Marcus's Windows PC
+**Status:** Supabase KB reader NOT connected on desktop surface. Google Drive connected but file locations unknown. Marcus-Mori repo is the reliable option.
