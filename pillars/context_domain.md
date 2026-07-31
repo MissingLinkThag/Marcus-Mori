@@ -36,6 +36,15 @@
 - **Pete's KinHelm CC:** $200 limit for one-time purchases without pre-authorization.
 - **Active pipeline:** Matson and Falcon progressing. InQTel asked for a demo.
 
+## Kindra Systems (Andrew Fedele -- product boundaries clarified session 148)
+- **Kindra Systems Management Console** is the admin control plane for Morwen deployments
+- NOT a general-purpose agent management platform. NOT a WALDO frontend. Mori's admin layer.
+- **Three-product model:** Morwen (end users) / Kindra (system admins) / WALDO (security/compliance)
+- **Kindra works WITHOUT WALDO.** Users, groups, integrations, model routing, usage dashboards, basic content guardrails -- all standalone.
+- **WALDO enriches Kindra when connected:** WALDO takes over authorization decisions, classification, compliance. Kindra remains the UI + user management + integration lifecycle.
+- **Data flow:** Kindra writes org structure to Supabase. WALDO reads and overlays governance policies. When WALDO connected, Kindra defers to WALDO for auth decisions. When disconnected, Kindra's group rules are the full enforcement.
+- **Kindra API for gateway (mode: kindra):** GET /api/v1/users/{user_id}/effective-integrations returns union of MCP server access across all user's groups.
+
 ## WALDO (AI Governance Platform)
 - **Repo:** MissingLinkThag/waldo-cis2 (private, the ONLY live repo. MissingLinkThag/waldo is DEAD.)
 - **Platform:** Kindo Studio -- studio.ironrangecyber.com/project/waldo-cis2-257093
@@ -50,37 +59,82 @@
 - **Ring 2 Governance:** Change requests, decisions, baselines, audit trail, clearance gates, conformance review
 - **Ring 3 Integration:** Full IMS (frameworks, requirements, controls, compliance matrix, management review, risk, KPIs, documents, roles, competence, audit management)
 
-### WALDO v2 Layer Architecture (session 144-147)
+### WALDO v2 Layer Architecture (sessions 144-148)
 | Layer | Name | Status |
 |-------|------|--------|
 | Layer 0 | Foundation | FROZEN -- protect existing working code |
 | Layer 1 | Structural Extensions (skills, auth, relationships) | ON MAIN, DEPLOYED, TABLES VERIFIED |
 | Layer 2 | Telemetry and Execution tracking | ON MAIN, DEPLOYED, 701 TESTS GREEN |
-| Layer 3 | MCP Gateway + Governance Engine | DESIGNED, parked on Andrew review |
+| Layer 3 | MCP Gateway + Governance Engine | BUILT + DEPLOYED CT 113, .40:8000 |
 | Layer 4 | Trust + RANDALL + Alignment + Compliance | PARTIALLY SPECCED |
 | Layer 5 | Panorama + Reporting + Simulation | PANORAMA RENAME DONE, rest not started |
 
 ### v2 Tables (all verified on live Postgres 2026-07-30)
 skill_definitions, skill_authorizations, telemetry_sessions, skill_executions, session_cost_summaries, skill_performance_metrics, agent_relationships, component_context_assignments, randall_rules (8 seeded)
 
-### WALDO MCP Gateway Design (session 147 -- DESIGNED, not built)
-- **Status:** Architecture designed, shared with Andrew for review. Parked until Andrew responds.
-- **Concept:** WALDO MCP Gateway as the authorization enforcement layer. Agent identifies itself + user, gateway calls WALDO API to check authorization, filters tool index, proxies authorized calls, records execution.
-- **Governs agents OUTSIDE of Kindo** -- any agent on any platform that speaks MCP.
+### WALDO MCP Gateway (session 147 designed, session 148 BUILT + DEPLOYED)
+- **Repo:** MissingLinkThag/waldo-mcp-gateway
+- **Deployed:** CT 113 `waldo-gateway` at 192.168.60.40:8000
+- **Separated topology:** Gateway at .40, MCP servers on CT 106 (morwen-mcp) at .20
+- **Status:** Health green, all 6 MCP servers healthy. Auth disabled (Phase 1 passthrough). Tool discovery returns 403 -- needs MCP_ADMIN_KEY from Andrew.
+- **CIS2 profile:** Multi-stage Docker, hash-pinned deps, non-root container user
 
-**Five architecture decisions locked:**
-1. Identity: Option C + verification key (X-Agent-ID + X-Agent-Key + user OAuth token)
+**Architecture (Andrew's v2 -- discovery-time authorization, accepted session 148):**
+- Discovery-time filtering replaces per-call evaluate. One WALDO call per session, not per tool call.
+- Agent sends X-Agent-ID + X-Agent-Key + X-User-ID. Gateway calls WALDO bootstrap + user lookup, caches grant.
+- GET /tools returns filtered capability index (only authorized servers+tools).
+- POST /mcp/{server_id} has proxy guard (defense-in-depth 403 for unauthorized).
+- POST /webhook/policy-update invalidates cache entries.
+- GET /admin/auth/cache for debugging.
+
+**Three authorization modes:**
+| Mode | Source of Truth | Use Case |
+|------|----------------|----------|
+| waldo | WALDO bootstrap + user lookup | Full governance |
+| kindra | Kindra Console API (group-based access) | Mori + Kindra, no WALDO |
+| static | Config file | Dev/test |
+
+**Five architecture decisions (locked session 147, refined session 148):**
+1. Identity: Option C + verification key (X-Agent-ID + X-Agent-Key + X-User-ID + Bearer token per-call)
 2. Gateway-to-WALDO auth: Single gateway key (gateway is a GovernedComponent)
-3. Telemetry: No second MCP server. Gateway records execution. Agents POST additional telemetry directly to WALDO.
-4. Kindra integration: Andrew's call. Recommendation: Kindra direct to WALDO, gateway for MCP agents only.
-5. Topology: Separated from day one. Gateway = own host. MCP servers = own host. Gateway is the ONLY entry point.
+3. Telemetry: No second MCP server. Gateway records execution. Agents POST additional to WALDO directly.
+4. Kindra integration: Direct to WALDO (control plane). Gateway for MCP agents only (data plane).
+5. Topology: Separated from day one.
+
+**Session 148 refinements (all accepted by Andrew):**
+- v2 trigger for content-sensitive auth: "first customer with multi-team data segregation on same MCP server"
+- Default TTL 900s (was 300). stale_grant_policy: deny (default) or extend (serve stale grant with warning log)
+- Docker network isolation for single-host; IP allowlist in MCP Server Template for multi-host
 
 **Defense model:** v1 = key + network + audit. v2 = anomaly detection (once baseline traffic exists).
-**Caching:** bootstrap 5min TTL, user clearance 5min TTL, classification NO CACHE (live calls only).
+**Caching:** Auth grant: 900s TTL or webhook-invalidated. Classification: NO CACHE (live calls only).
 
-**Repos reviewed:**
-- AirborneSharks/mcp-gateway -- Andrew's FastAPI proxy. Health monitoring, WALDO reporter wired. Missing: identity resolution, auth enforcement, capability filtering.
-- KinHelm-ai/MCP-Server-Template -- Cookie-cutter for MCP servers. OAuth per-request, standardized health/auth/metrics, ports 8000-8010+.
+**WALDO APIs the gateway calls (all already exist, zero WALDO changes needed):**
+- GET /api/v1/component/{id}/bootstrap -- agent governance package
+- GET /api/v1/users/lookup -- user identity + clearance
+- POST /api/v1/gateway/evaluate -- classification gate (v2 content-sensitive)
+- POST /api/v1/telemetry/batch -- execution telemetry
+
+**Migration path:**
+- Phase 1 (NOW): auth disabled, pure passthrough
+- Phase 2: static auth from config
+- Phase 3: kindra auth (Andrew's effective-integrations endpoint)
+- Phase 4: waldo auth (full governance)
+
+**Gateway server URLs (gateway-config.yaml):**
+```
+google-calendar -> http://192.168.60.20:8001
+github -> http://192.168.60.20:8002
+jira -> http://192.168.60.20:8004
+web-search -> http://192.168.60.20:8006
+document-processor -> http://192.168.60.20:8007
+code-sandbox -> http://192.168.60.20:8008
+```
+
+**Known issues:**
+- Dockerfile CMD needed fix: uvicorn not on PATH, changed to python -m uvicorn (applied locally, not committed to repo)
+- MCP_ADMIN_KEY blank -- tool discovery gets 403 from MCP servers (health checks pass)
+- Gateway not yet registered as GovernedComponent in WALDO
 
 ### WALDO Trust Score v3.0.0
 - Three axes: conformance, correctness, availability
@@ -105,13 +159,11 @@ skill_definitions, skill_authorizations, telemetry_sessions, skill_executions, s
 - Background job with per-project timeout tuning (120s) and 60-day staleness filter
 
 ### WALDO Data Wipe and Recovery (session 146-147)
-- Data wipe occurred during Layer 2B deploy (2026-07-30). Root cause: schema patches Phases 32-34 failing with `dialect` not defined, plus possible interaction with registry cleanup running destructive DELETEs on every boot.
-- Recovered from Johnny's nightly backup (vzdump-lxc-101-2026_07_30-02_01_35.tar.zst, 389MB, 2 AM). All data restored: 600 components, 1758 CRs, 22844 audit entries, 9 users, 28 baselines, 2188 trust snapshots, full IMS (3 frameworks, 190 clauses, 165 requirements).
-- Fixes deployed: dialect scoping (7d1ce5c), env hardening (7d1ce5c), system_id column (manual ALTER), v2 model columns + cascade (19b59ae).
-- Registry cleanup run-once guard specced (WALDO-REGISTRY-CLEANUP-RUNONCE-V1), FRED building.
-- Snapshot taken post-recovery (post-recovery-2026-07-30).
+- Data wipe occurred during Layer 2B deploy (2026-07-30). Root cause: schema patches Phases 32-34 failing with dialect not defined, plus possible interaction with registry cleanup running destructive DELETEs on every boot.
+- Recovered from Johnny's nightly backup. All data restored: 600 components, 1758 CRs, 22844 audit entries.
+- Registry cleanup run-once guard delivered by FRED (aa8d219), reviewed clean, NOT YET DEPLOYED to waldo-vm.
 
-### FRED Spec Discipline (NEW session 147)
+### FRED Spec Discipline (session 147)
 - All specs touching the DB must include explicit column names, types, and constraints
 - FRED does not infer columns -- reads them from the spec
 - Prevents the class of bugs that caused the data wipe
@@ -153,15 +205,28 @@ skill_definitions, skill_authorizations, telemetry_sessions, skill_executions, s
 
 **Mid-Range preferred: Sonnet 4.6 specifically, NOT Sonnet 5** (execution drift observed sessions 112-123)
 
-## Proxmox Lab
+## Proxmox Lab (updated session 148)
 - Host: 192.168.60.5:8006 (pve)
-- VM 102 waldo-vm: Ubuntu 26.04, 6 cores, 8GB RAM, 192.168.60.12
-- CT 101 irc-lab-db: PostgreSQL 16, database marcus/role marcus, 192.168.60.11
-- VM 100 irc-lab-llm-01: Ollama + Open WebUI, GPU passthrough, 192.168.60.10
-- VM 200 Shadow Broker: Kali Linux sandbox, 192.168.60.60
+- **CT 101 irc-lab-db:** PostgreSQL 16, 192.168.60.11
+- **VM 102 kai-lab-waldo:** WALDO instance, 192.168.60.12
+- **CT 103 kai-lab-vilkd:** Vilk
+- **VM 104 kai-lab-llm-01:** Ollama + Open WebUI, GPU passthrough
+- **CT 105 kai-lab-vilk-dev:** Vilk dev
+- **CT 106 morwen-mcp:** Andrew's MCP servers, 192.168.60.20
+- **CT 107 kai-kinos-dev:** Kinos dev
+- **CT 108 kai-lab-docker:** Docker host
+- **CT 109 kai-lab-dns:** DNS
+- **CT 110 kai-yulia-dev:** Yulia dev
+- **VM 100 studio-qa:** Studio QA
+- **VM 111 BambuStudio:** BambuStudio
+- **CT 112 kinhelm-librarian:** Librarian
+- **CT 113 waldo-gateway:** MCP Gateway, 192.168.60.40 (NEW session 148)
+- **VM 120 kai-kinos-build:** Kinos build
+- **VM 121 kai-kinos-node:** Kinos node
+- **VM 200 Shadow Broker:** Kali Linux sandbox, 192.168.60.60
 - VPN-only access, no public port-forwards
 - Nightly backups automatic (2 AM, Lab-wide, Johnny-managed)
-- **ALWAYS take a Proxmox snapshot before risky changes** (cheap, instant rollback)
+- **ALWAYS take a Proxmox snapshot before risky changes**
 
 ## Context Push Note
 - **Marcus-Mori repo (MissingLinkThag/Marcus-Mori) is the context persistence layer for this surface.**
