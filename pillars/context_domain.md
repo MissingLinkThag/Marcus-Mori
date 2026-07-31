@@ -10,8 +10,8 @@
 - **114 AIMSREQs** across 7 PDCA domains (CTX, LDR, PLN, SUP, OPS, CHK, ACT) covering 11 regulatory frameworks
 - **Document hierarchy:** Tier 1 (AIMS manual) → Tier 2 (standalone procedures) → Tier 3 (work instructions)
 - **Go-live: NLT December 2026**
-- Phase 1 Document (Now→Aug), Phase 2 Fill Gaps (Sep→Oct), Phase 3 Assess Outcomes (Nov→Dec)
-- **M1 Aug 29** — Foundation (15 items). **M2 Sep 30** — SCIA Part 2 Readiness (28 items). **SCIA Part 2 to EASA Oct 15.**
+- Phase 1 Document (Now-Aug), Phase 2 Fill Gaps (Sep-Oct), Phase 3 Assess Outcomes (Nov-Dec)
+- **M1 Aug 29** -- Foundation (15 items). **M2 Sep 30** -- SCIA Part 2 Readiness (28 items). **SCIA Part 2 to EASA Oct 15.**
 - **Roles:** Marcus (AIMS Author, QA), Kristen Gauthier (Tier 2 Lead), Jaspreet Gill (PM), Steve Black (CM)
 
 ## Aireon 3.0 SQA
@@ -32,6 +32,9 @@
 - **Products:** WALDO, KinHelm Studio (FRED), VILK, KinHelm Personal Assistant (Morwen/Mori)
 - **The Stack:** 5-layer defense-in-depth. L1 platform governance (Kindo), L2 governed user interaction (Assistant), L3 governed ops (VILK), L4 governed code (Studio), L5 lifecycle oversight (WALDO)
 - **Production proof:** 211 governed agents, 4,963 runs/30 days, 86.2% success, 917/1000 avg trust
+- **Forward Deployed Engineering:** Marcus and Pete are the customer-facing pair (FDE roles, market $400K-$1.2M). Andrew, Tom, John work remote as build engine.
+- **Pete's KinHelm CC:** $200 limit for one-time purchases without pre-authorization.
+- **Active pipeline:** Matson and Falcon progressing. InQTel asked for a demo.
 
 ## WALDO (AI Governance Platform)
 - **Repo:** MissingLinkThag/waldo-cis2 (private, the ONLY live repo. MissingLinkThag/waldo is DEAD.)
@@ -39,7 +42,7 @@
 - **Stack:** Flask/Jinja2/Bootstrap5/gunicorn, PostgreSQL (prod via irc-lab-db), Docker
 - **Deployed:** waldo-vm (Proxmox VM 102, 192.168.60.12:5000), WireGuard-only
 - **Deploy command:** ./deploy-lab.sh (pull+build+test+deploy+health-check)
-- **Test suite:** 587 tests, zero failures, gates both build-time and deploy-time
+- **Test suite:** 701 tests, zero failures, gates both build-time and deploy-time
 - **Current baseline:** 1.0.9
 
 ### WALDO Three-Ring Architecture
@@ -47,40 +50,37 @@
 - **Ring 2 Governance:** Change requests, decisions, baselines, audit trail, clearance gates, conformance review
 - **Ring 3 Integration:** Full IMS (frameworks, requirements, controls, compliance matrix, management review, risk, KPIs, documents, roles, competence, audit management)
 
-### WALDO Module Inventory (21+ blueprints, all verified session 144)
-| Module | Blueprint | Status |
-|--------|-----------|--------|
-| Dashboard | main_bp | Verified |
-| Ecosystem | ecosystem_bp | Verified |
-| Governance | governance_bp | Verified |
-| Baselines | baselines_bp | Verified |
-| Trust Score | trust_score_bp | Verified |
-| Cost | cost_bp | Verified (no real data) |
-| Telemetry | telemetry_bp | Verified |
-| Audit Trail | audit_bp | Verified |
-| QMS/Compliance | qms_bp | Verified |
-| Documents | documents_bp | Verified |
-| Decisions | decisions_bp | Verified |
-| Audit Mgmt | audit_mgmt_bp | Verified |
-| Skills | skills_bp | Verified |
-| KPIs | kpi_bp | Verified |
-| Controls | controls_bp | Verified |
-| Risk | risk_bp | Verified |
-| Policy | policy_bp | Verified |
-| Gateway | gateway_bp | Verified (mocked execution) |
-| NC Module | nc_bp | Verified |
-| Resources | resources_bp | Verified |
-| Competence | competence_bp | Verified |
-| Mgmt Review | management_review_bp | Verified |
-| Studio Ingest | studio_bp | Verified |
-| GitHub Webhooks | github_webhook_bp | Verified |
-| Intake | intake_bp | Verified |
-| Randall Reports | randall_bp | Verified |
-| Admin | admin_bp | Verified |
-| Auth/Users | auth_bp | Verified |
-| Webhooks | webhooks_bp | Verified |
-| About | about_bp | Verified |
-| API | api_bp | Backend only |
+### WALDO v2 Layer Architecture (session 144-147)
+| Layer | Name | Status |
+|-------|------|--------|
+| Layer 0 | Foundation | FROZEN -- protect existing working code |
+| Layer 1 | Structural Extensions (skills, auth, relationships) | ON MAIN, DEPLOYED, TABLES VERIFIED |
+| Layer 2 | Telemetry and Execution tracking | ON MAIN, DEPLOYED, 701 TESTS GREEN |
+| Layer 3 | MCP Gateway + Governance Engine | DESIGNED, parked on Andrew review |
+| Layer 4 | Trust + RANDALL + Alignment + Compliance | PARTIALLY SPECCED |
+| Layer 5 | Panorama + Reporting + Simulation | PANORAMA RENAME DONE, rest not started |
+
+### v2 Tables (all verified on live Postgres 2026-07-30)
+skill_definitions, skill_authorizations, telemetry_sessions, skill_executions, session_cost_summaries, skill_performance_metrics, agent_relationships, component_context_assignments, randall_rules (8 seeded)
+
+### WALDO MCP Gateway Design (session 147 -- DESIGNED, not built)
+- **Status:** Architecture designed, shared with Andrew for review. Parked until Andrew responds.
+- **Concept:** WALDO MCP Gateway as the authorization enforcement layer. Agent identifies itself + user, gateway calls WALDO API to check authorization, filters tool index, proxies authorized calls, records execution.
+- **Governs agents OUTSIDE of Kindo** -- any agent on any platform that speaks MCP.
+
+**Five architecture decisions locked:**
+1. Identity: Option C + verification key (X-Agent-ID + X-Agent-Key + user OAuth token)
+2. Gateway-to-WALDO auth: Single gateway key (gateway is a GovernedComponent)
+3. Telemetry: No second MCP server. Gateway records execution. Agents POST additional telemetry directly to WALDO.
+4. Kindra integration: Andrew's call. Recommendation: Kindra direct to WALDO, gateway for MCP agents only.
+5. Topology: Separated from day one. Gateway = own host. MCP servers = own host. Gateway is the ONLY entry point.
+
+**Defense model:** v1 = key + network + audit. v2 = anomaly detection (once baseline traffic exists).
+**Caching:** bootstrap 5min TTL, user clearance 5min TTL, classification NO CACHE (live calls only).
+
+**Repos reviewed:**
+- AirborneSharks/mcp-gateway -- Andrew's FastAPI proxy. Health monitoring, WALDO reporter wired. Missing: identity resolution, auth enforcement, capability filtering.
+- KinHelm-ai/MCP-Server-Template -- Cookie-cutter for MCP servers. OAuth per-request, standardized health/auth/metrics, ports 8000-8010+.
 
 ### WALDO Trust Score v3.0.0
 - Three axes: conformance, correctness, availability
@@ -93,17 +93,28 @@
 - ORTHOGONAL to risk_tier (T1-T4) and risk_rating (C/H/M/L)
 - Floor-constraint model: posture can only ELEVATE process, never reduce
 
-### WALDO GitHub App (Phase 1 — DEPLOYED session 144)
+### WALDO GitHub App (Phase 1 -- DEPLOYED session 144)
 - Webhook receiver at POST /github/webhook (HMAC-SHA256, fails closed)
-- push events → GitHubCommit records (drift tracking)
-- merged PRs → ChangeRequests (source='github', Studio dedup via commit SHA)
-- Admin dashboard at /github/ (in Governance nav)
-- Phase 4 pending: register actual GitHub App with Tom (blocker: VPN-only IP, needs smee.io or port forward)
+- push events -> GitHubCommit records (drift tracking)
+- merged PRs -> ChangeRequests (source='github', Studio dedup via commit SHA)
+- Phase 4 pending: register actual GitHub App with Tom
 
 ### WALDO Studio Ingestion
 - Pull-based from Kindo Studio via svc-waldo service account
 - 39 projects, 900+ revisions ingested
 - Background job with per-project timeout tuning (120s) and 60-day staleness filter
+
+### WALDO Data Wipe and Recovery (session 146-147)
+- Data wipe occurred during Layer 2B deploy (2026-07-30). Root cause: schema patches Phases 32-34 failing with `dialect` not defined, plus possible interaction with registry cleanup running destructive DELETEs on every boot.
+- Recovered from Johnny's nightly backup (vzdump-lxc-101-2026_07_30-02_01_35.tar.zst, 389MB, 2 AM). All data restored: 600 components, 1758 CRs, 22844 audit entries, 9 users, 28 baselines, 2188 trust snapshots, full IMS (3 frameworks, 190 clauses, 165 requirements).
+- Fixes deployed: dialect scoping (7d1ce5c), env hardening (7d1ce5c), system_id column (manual ALTER), v2 model columns + cascade (19b59ae).
+- Registry cleanup run-once guard specced (WALDO-REGISTRY-CLEANUP-RUNONCE-V1), FRED building.
+- Snapshot taken post-recovery (post-recovery-2026-07-30).
+
+### FRED Spec Discipline (NEW session 147)
+- All specs touching the DB must include explicit column names, types, and constraints
+- FRED does not infer columns -- reads them from the spec
+- Prevents the class of bugs that caused the data wipe
 
 ### HELM (KinHelm Operations Console)
 - **Repo:** MissingLinkThag/helm
@@ -119,7 +130,7 @@
 | AI Governance | WALDO | Lifecycle oversight, trust scoring |
 | Project Mgmt | CLARENCE | Department-agnostic PM |
 | CRM | LUTHER | Pipeline, contacts, deals |
-| Finance | LESTER | Invoicing, P&L, budgeting |
+| Finance | LESTER | Invoicing, P and L, budgeting |
 | HR | HERMAN | Headcount, onboarding, performance |
 | Helpdesk | OLIVIA | Tickets, SLAs, knowledge base |
 | Contracts | FRAZIER | Contract lifecycle, vendor mgmt |
@@ -149,7 +160,14 @@
 - VM 100 irc-lab-llm-01: Ollama + Open WebUI, GPU passthrough, 192.168.60.10
 - VM 200 Shadow Broker: Kali Linux sandbox, 192.168.60.60
 - VPN-only access, no public port-forwards
-- Nightly backups automatic (2 AM, Lab-wide)
+- Nightly backups automatic (2 AM, Lab-wide, Johnny-managed)
+- **ALWAYS take a Proxmox snapshot before risky changes** (cheap, instant rollback)
+
+## Context Push Note
+- **Marcus-Mori repo (MissingLinkThag/Marcus-Mori) is the context persistence layer for this surface.**
+- Structure: pillars/, sessions/, session_summaries/, kb/
+- Push context here at the end of every session or when Marcus says "context push"
+- This is the KNOWN option for saving state when Supabase KB and Google Drive are unavailable
 
 ## Jira Custom Fields
 - EASA Reportable: customfield_12439 | EASA Complete: customfield_13547
