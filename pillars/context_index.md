@@ -1,88 +1,108 @@
 # Context Index
 # Tracks what happened and what is current.
-# Transfer to Supabase pillar system when Andrew ships the fix.
 
 ---
 
 ## Last Session
 
-**Date:** 2026-08-01 (session 149)
+**Date:** 2026-08-01 (session 150)
 **Model:** Mid-Range -- Sonnet 4.6 (desktop surface, Morwen)
-**Surface:** Kindo desktop (Morwen)
+**Duration:** 5h 30m
 
-**Summary:** Registry cleanup run-once guard bugs fixed (randall_alerts cascade + config_version NOT NULL), deployed, 6 junk components confirmed deleted, guard marker set. Gateway Dockerfile CMD fix pushed to repo (10409a6). Gateway registered as GovernedComponent in WALDO (5b647c1b, operational posture, baselined). SQLAlchemy Query.get() deprecation: spec dispatched, FRED delivered d5cd300 (29 files, mechanical), reviewed clean, deployed (701 tests, 66 warnings). Alignment review spec revised v1.0→v1.1 (grade multiplier system replacing fixed penalties), dispatched to FRED.
+**Summary:** Massive build session. 14 deliveries shipped across WALDO, MCP Gateway, and HELM. Test suite 508 to 831 (+323 tests, zero failures). V2 design doc features essentially complete — 11 of 13 major features deployed, 2 blocked on Andrew's MCP_ADMIN_KEY.
 
-**Key decisions this session:**
-- Registry cleanup CLOSED (both bugs fixed, guard set, junk deleted)
-- Alignment review Part C revised: grade multipliers (0.4/0.7/1.0) through existing correctness axis, NOT bolted-on fixed penalties
-- Gateway governance posture set to operational (not innovation — it's in the execution path)
+**WALDO deliveries (9):**
+1. Registry cleanup CLOSED (2 bugs + 6 junk components + guard marker)
+2. Query.get() deprecation cleanup (122 sites, 29 files, FRED d5cd300)
+3. Alignment Review Phase 6 (grade multipliers, 5 failure modes, FRED 230a9c9)
+4. Cost Redesign Phase 5 (cost as telemetry dimension, flat-rate pricing, FRED 402025a)
+5. Continuous Compliance RANDALL wiring (assertion eval, auto-NC, evidence auto-populate, FRED 2514fc1)
+6. V2 Features Batch — 5 features in one delivery (Agent Relationships, Data Flow Boundaries, Intent Validation, Provenance Chains, Organizational Context, FRED 86ba6a3, +4296 lines, 67 tests)
+7. Cascade fix for v2 tables (dual-FK handling, FRED 7153d37)
+8. Nav redesign (5 buyer-facing groups + gear icon, FRED 477ecd9) — PARTIAL, 17 v2 routes missing, fix spec dispatched
+9. Test auth fix for cost dashboard tests
+
+**Gateway deliveries (4):**
+10. Dockerfile CMD fix (10409a6)
+11. Gateway registered + baselined in WALDO (5b647c1b, operational posture)
+12. 4 governance MCP tools live + end-to-end proven (classify_data, check_clearance, report_execution, report_error)
+13. M365 Copilot connector (ai-plugin.json + openapi.yaml, FRED 87a0d40)
+14. Gateway hardening — fail-closed auth, CORS, error sanitization (FRED ebbf158)
+
+**HELM:**
+15. Pete's pricing model documented (docs/helm-evolution-petes-model.md, b1daf43)
+
+**Key decisions:**
+- Alignment review v1.1: grade multipliers through existing formula, not parallel penalties
+- Nav organized by buyer pain (Ecosystem/Activity/Governance/Compliance/Organization), not architecture
+- AI Panorama removed from nav (logo link only)
+- RANDALL renamed "Continuous Compliance" in nav
+- Gateway/Studio Ingestion moved to system gear menu
+- Pete's pricing model: platform + agent packs, not per-agent. Parked HELM evolution post-first-customer.
+- HELM sits ABOVE the platform (fleet mgmt), Kindra INSIDE (per-product config), Vilk/Ironsight = infra CMDB. Three layers not competitors.
 
 ## Prior Sessions (loaded context)
 
-- Session 148 (2026-07-31): Andrew's gateway design v2 accepted. Gateway FRED spec delivered. CT 113 deployed at .40:8000. Registry-cleanup-runonce delivered (not yet deployed).
-- Session 147 (2026-07-30): Business/Oops meeting. MCP Gateway designed. Three FRED fixes deployed. v2 tables verified. Name: Karina -> Mori.
-- Session 146 (2026-07-30): v2 Layer 2B deploy, data wipe incident, recovery from Johnny's nightly backup
+- Session 149 (2026-08-01): Registry cleanup, Query.get() spec, alignment spec v1.1 dispatched
+- Session 148 (2026-07-31): Gateway deployed CT 113, registry-cleanup-runonce delivered
+- Session 147 (2026-07-30): MCP Gateway designed, 3 FRED fixes deployed, v2 tables verified, Karina->Mori
+- Session 146 (2026-07-30): v2 Layer 2B deploy, data wipe incident, recovery from backup
 - Session 145 (2026-07-28): v2 Layer 1 delivery
-- Session 144 (2026-07-28): WALDO v2 architecture designed (5 layers), FRED spec discipline, GitHub App Phase 1, Panorama rename
-- Sessions 137-142: NC module, governance posture, trust formula posture-aware, Agent Governance API, HELM auth, test suite to green
-- Sessions 130-136: Studio ingestion end-to-end, REPO-LINK, delete cascade fix, duplicate merges, test-gate CI
-- Sessions 122-129: Design-intent audit (12 findings), HELM deployed, IMS Pass 2, hash chain locking, deploy-lab.sh
+- Session 144 (2026-07-28): WALDO v2 architecture designed (5 layers), Panorama rename
+- Sessions 137-142: NC module, governance posture, trust formula, Agent Governance API, HELM auth
+- Sessions 130-136: Studio ingestion, REPO-LINK, delete cascade, duplicate merges, test-gate CI
+- Sessions 122-129: Design-intent audit, HELM deployed, IMS Pass 2, hash chain locking
 
 ## WALDO v2 Build Status
 
-| Layer | Status | Session |
-|-------|--------|---------|
-| Layer 0 (Foundation) | FROZEN | 144 |
-| Layer 1 (Structural) | DEPLOYED, TABLES VERIFIED | 145-147 |
-| Layer 2 (Telemetry + Execution) | DEPLOYED, 701 TESTS GREEN | 146-147 |
-| Layer 3 (MCP Gateway) | BUILT + DEPLOYED (CT 113, .40:8000) + REGISTERED IN WALDO | 148-149 |
-| Layer 4 (Trust + RANDALL + Alignment) | ALIGNMENT SPEC v1.1 DISPATCHED TO FRED | 149 |
-| Layer 5 (Panorama + Reporting) | PANORAMA RENAME DONE | 144 |
+| Phase | Feature | Status | Session |
+|-------|---------|--------|---------|
+| Phase 1 | Skills Registry + Auth Matrix | ✅ DEPLOYED | 145 |
+| Phase 2 | Telemetry Redesign (sessions, structured capture) | ✅ DEPLOYED | 146-147 |
+| Phase 3 | MCP Server — 4/7 governance tools | ✅ DEPLOYED + PROVEN | 150 |
+| Phase 3 | MCP Server — 3 remaining tools | ⛔ BLOCKED (Andrew MCP_ADMIN_KEY) | — |
+| Phase 4 | Gateway merges into MCP | 🟡 PARTIAL (classify+clearance merged, skill auth not yet) | 150 |
+| Phase 5 | Cost Redesign | ✅ DEPLOYED | 150 |
+| Phase 6 | Trust + Performance Attribution | ✅ DEPLOYED | 150 |
+| Phase 7 | SCM Webhook Expansion | ⬜ NOT STARTED | — |
+| Phase 8 | M365 Copilot Connector | ✅ DEPLOYED + PROVEN | 150 |
+| — | Agent Relationships / Dependency Graph | ✅ DEPLOYED | 150 |
+| — | Data Flow Boundaries | ✅ DEPLOYED | 150 |
+| — | Intent Validation | ✅ DEPLOYED | 150 |
+| — | Provenance Chains | ✅ DEPLOYED | 150 |
+| — | Organizational Context | ✅ DEPLOYED | 150 |
+| — | Continuous Compliance (RANDALL wiring) | ✅ DEPLOYED | 150 |
+| — | Gateway Hardening (customer-ready auth) | ✅ DEPLOYED + PROVEN | 150 |
+| — | Nav Redesign (buyer-facing) | 🟡 DEPLOYED, fix in flight (17 missing routes) | 150 |
 
 ## Open Threads
 
-1. MCP_ADMIN_KEY from Andrew — gateway tool discovery blocked without it (message sent session 148)
-2. FRED alignment review delivery — dispatched, building
-3. Layer 4: fred_spec_alignment_review.json in repo, FRED hasn't built it yet
-4. Sidecar changes — Andrew's side: wire identity headers (X-Agent-ID/X-Agent-Key/X-User-ID)
-5. Template sync waldo-template <- waldo-cis2 (Marcus timing call)
-6. Gateway component type correction (studio_project -> tool/mcp_gateway)
-7. Remaining 66 test warnings — different root cause from Query.get(), low priority
-
-## Closed This Session
-
-- Registry cleanup run-once guard: 2 bugs fixed (randall_alerts cascade + config_version), deployed, 6 junk components deleted, marker set
-- Gateway Dockerfile CMD fix: pushed to repo (10409a6)
-- Gateway GovernedComponent registration + baseline
-- SQLAlchemy Query.get() deprecation: 29 files, 122 call sites, FRED delivered + deployed (805 warnings -> 66)
-- Alignment review spec revised v1.0 -> v1.1
+1. Nav fix delivery from FRED — 17 missing v2 routes (spec fred_spec_nav_fix_v1.json dispatched)
+2. MCP_ADMIN_KEY from Andrew — 3 remaining governance MCP tools blocked
+3. Sidecar header changes — Andrew's side (X-Agent-ID/X-Agent-Key/X-User-ID)
+4. Pain-first walkthrough / demo script — highest-value non-code item
+5. Template sync waldo-template <- waldo-cis2 — required before first customer deployment
+6. Pete's pricing on kinhelm.ai website
+7. IMS Pass 3 (93 Annex A) — parked on Pete
+8. IMS Layer 4 combined view — blocked on Controls content
+9. Management Review founding meeting — still pending
+10. HELM agent pack management — parked post-first-customer
+11. 69 test warnings — low priority, different root cause from Query.get()
 
 ## Repo State
 
-- **waldo-cis2:** HEAD `b83fa0f` (deployed to waldo-vm, 701 tests green, 66 warnings)
-- **waldo-mcp-gateway:** HEAD `10409a6` (CMD fix pushed, deployed on CT 113, 6 servers healthy)
-- **helm:** unchanged
+- **waldo-cis2:** HEAD `947b638` (deployed to waldo-vm at 7153d37 cascade fix, nav redesign on main not yet deployed). 831 tests, 69 warnings.
+- **waldo-mcp-gateway:** HEAD `ebbf158` (hardened, deployed on CT 113). 4 governance tools + M365 connector live.
+- **helm:** HEAD `b1daf43` (Pete pricing doc added). Deployed on waldo-vm:5001. Unchanged functionally.
 
-## Lab Topology (updated session 148)
+## Lab Topology
 
 | CT/VM | Name | IP | Purpose | Status |
 |-------|------|----|---------|--------|
-| 100 | studio-qa | ? | Studio QA | NEW — unverified |
 | 101 | irc-lab-db | .11 | PostgreSQL | Known |
-| 102 | kai-lab-waldo | .12 | WALDO instance | Known |
-| 103 | kai-lab-vilkd | ? | Vilk | NEW |
-| 104 | kai-lab-llm-01 | ? | LLM (Ollama) | Known, renumbered |
-| 105 | kai-lab-vilk-dev | ? | Vilk dev | NEW |
-| 106 | morwen-mcp | .20 | Andrew's MCP servers | NEW — confirmed |
-| 107 | kai-kinos-dev | ? | Kinos dev | NEW |
-| 108 | kai-lab-docker | ? | Docker host | NEW |
-| 109 | kai-lab-dns | ? | DNS | NEW |
-| 110 | kai-yulia-dev | ? | Yulia dev | NEW |
-| 111 | BambuStudio | ? | BambuStudio | NEW |
-| 112 | kinhelm-librarian | ? | Librarian | NEW |
-| 113 | waldo-gateway | .40 | MCP Gateway | Deployed session 148, registered session 149 |
-| 120 | kai-kinos-build | ? | Kinos build | NEW |
-| 121 | kai-kinos-node | ? | Kinos node | NEW |
+| 102 | kai-lab-waldo | .12 | WALDO instance | Deployed, 831 tests |
+| 106 | morwen-mcp | .20 | Andrew's MCP servers | Confirmed |
+| 113 | waldo-gateway | .40 | MCP Gateway | Deployed, hardened, 4 gov tools + M365 live |
 
 ## Context Persistence
 
