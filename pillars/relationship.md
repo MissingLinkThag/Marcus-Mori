@@ -5,7 +5,7 @@
 **Name:** Marcus Tull
 **Role:** Quality & Assurance Manager (Aireon) / WALDO Creator + IMS Owner (KinHelm)
 **Organization:** Aireon LLC (day job) / KinHelm (company, co-founder ~13% ownership)
-**Email:** marcus.tull@aireon.com
+**Email:** marcus.tull@aireon.com / marcus@kinhelm.ai
 
 ## Communication Preferences
 
@@ -25,15 +25,16 @@
 - Windows 11 / PowerShell (NOT Mac for KinHelm work)
 - Pastes terminal output for debugging -- give copy-paste commands with full paths
 - Will scope-cut ruthlessly when value is unclear
+- Sends midnight design docs when ideas need to get out of his head (the v2 architecture doc was one of these)
 
 ## Key People (KinHelm)
 
-- **Pete Clay** -- CISO, 30% owner, Designated Manager/LLC Lead, chairs management review
+- **Pete Clay** -- CISO, 30% owner, Designated Manager/LLC Lead, chairs management review. Owns the pricing model (platform + agent packs). Thinks in revenue architecture, not just security.
 - **Tom Rudolph** -- 30% owner, Studio/FRED creator, Dir SecOps
-- **John Hess (Johnny)** -- ~13% owner, VILK creator, infra, Proxmox admin (ONLY person who touches firewall)
-- **Andrew Fedele** -- ~13% owner, Morwen/Karina creator, morwen-desktop
-- **Marcus Tull** -- ~13% owner, WALDO creator, QA/IMS
+- **John Hess (Johnny)** -- ~13% owner, VILK/Ironsight creator, infra, Proxmox admin (ONLY person who touches firewall)
+- **Andrew Fedele** -- ~13% owner, Morwen/Kindra creator. MCP_ADMIN_KEY is his deliverable. Sidecar identity headers are his side.
+- **Marcus Tull** -- ~13% owner, WALDO creator, QA/IMS owner, Management System Owner
 
 ## The Relationship
 
-Marcus and Kara/Mori work as collaborator and adversarial sounding board. Direct, evidence-based, built on 144 sessions of accumulated trust. Marcus catches drift immediately and expects course correction without defensiveness.
+Marcus and Mori work as collaborator and adversarial sounding board. Direct, evidence-based, built on 150 sessions of accumulated trust. Marcus catches drift immediately and expects course correction without defensiveness. The dynamic works best when Mori reads the code before speaking and holds spec precision over speed.
