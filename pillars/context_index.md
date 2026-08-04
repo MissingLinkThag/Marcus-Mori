@@ -6,15 +6,16 @@
 ## Context Weight Reduction (session 153)
 Index split into active (this file, ~4KB) + archive (sessions 96-142). System prompt should load THIS file, not the old monolithic version. Archive is pullable on demand.
 
-## Last Session (2026-08-03/04, session 153)
+## Last Session (2026-08-04, session 154)
 
-CUSTODY framework integration (QMS seed + agent profiling L×M×R on components). 8 FRED specs reviewed and passed (baseline enrichment, governance pipeline, NC pipeline, audit mgmt, KPI dashboard, decisions web UI, relationships graph, CUSTODY profiling). Schema patch wiring bug found (Phases 40-46 orphaned below function boundary, fixed). Trust overview test fix (db.create_all missing). Matson confirmed live customer — deployment readiness assessment drafted. Group chat message drafted for team (TLS, DNS, onboarding automation needs). Test suite 836 passed / 1 remaining (fix pushed, awaiting gate verification).
+Template sync + customer deployment readiness session. waldo-template brought to full parity with waldo-cis2 (all 146 templates, all Python app code, all tests). Onboarding wizard built (first-boot setup: org, admin, frameworks). Guided onboarding flow built (6-step post-wizard walkthrough using real DB state). Cost dashboard bug fixed (float .get() error). Conformance test fixed. Test suite 837/0 fully green. Version bump v1.0 → v2.0.0. Customer deploy script (deploy.sh) already exists in template with Nginx+Certbot TLS. HELM assessed as deployment-ready, no changes needed for first customer. FRED template lesson learned: max ~50 files per spec, batch larger operations.
 
 ## Prior Sessions (one-liners)
 
 | Session | Date | Summary |
 |---------|------|---------|
-| 152 | 2026-08-03 | WALDO v2 data population (skills, relationships, contexts, cost seeded). Context detail 500 fix. 21 trace links to ISO 4.1/4.2. 5 redesign specs + relationships graph spec dispatched. |
+| 153 | 2026-08-03/04 | CUSTODY framework, 8 FRED specs reviewed, schema patch wiring fix, trust overview test fix, Matson deployment assessment, group chat message |
+| 152 | 2026-08-03 | WALDO v2 data population (skills, relationships, contexts, cost seeded). Context detail 500 fix. 21 trace links. 5 redesign specs. |
 | 151 | 2026-08-02 | Nav fix (3 rounds), component detail 2-tab design, governance pipeline redesign, 4 datetime fix rounds, theme fix spec. |
 | 150 | 2026-08-01 | 14 items shipped. Test suite 508→831. V2 features batch. MCP Gateway deployed CT 113. M365 Copilot connector. Pete pricing model. RANDALL wiring. |
 | 145 | 2026-07-28 | IMS build-out: 30 controls, 72 mappings, 4 docs, 50 reqs implemented, 27 NCs triaged, 1564 CRs verified. ISO 9001+42001 100%. 27001 18.4%. |
@@ -28,40 +29,39 @@ CUSTODY framework integration (QMS seed + agent profiling L×M×R on components)
 | Phase | Description | Status |
 |-------|-------------|--------|
 | Schema patches 1-46 | All wired into _run_schema_patches() | ✅ Deployed |
-| Baseline enrichment | Skills/relationships/trust/cost in snapshot | ✅ Deployed |
-| Governance pipeline | Funnel viz + velocity metrics | ✅ Deployed |
-| NC pipeline | Stage counts + summary tiles | ✅ Deployed |
-| KPI dashboard | Fleet summary + category grouping | ✅ Deployed |
-| Decisions web UI | Full CRUD (was API-only) | ✅ Deployed |
-| Relationships graph | D3 force-directed | ✅ Deployed |
-| Audit management | Engagement cards + filtering | ✅ Deployed |
-| CUSTODY framework | QMS seed (7 pillars, 10 principles, 17 reqs) | ✅ Seeded |
-| CUSTODY profiling | L×M×R on GovernedComponent | ✅ Deployed + profiled |
-| Test suite | 836/1 (fix pushed, gate pending) | ⏳ Verify |
-| TLS termination | Caddy proxy in Docker Compose | ❌ Not started |
-| Onboarding CLI | flask onboard command | ❌ Not started |
+| All v2 features | Governance, telemetry, execution, relationships, CUSTODY, cost, etc. | ✅ Deployed |
+| Test suite | 837 passed, 0 failed | ✅ CLEAN |
+| Version bump | Footer v1.0 → v2.0.0 | ✅ Deployed |
+| waldo-template sync | Full parity with waldo-cis2 (146 templates, all app code) | ✅ Complete |
+| Onboarding wizard | First-boot setup (org, admin, frameworks) | ✅ Built (template) |
+| Guided onboarding | 6-step post-wizard walkthrough | ✅ Built (template) |
+| Customer deploy script | Nginx + Certbot + Docker, single command | ✅ Exists |
+| TLS termination (Lab) | Caddy proxy for internal access | ❌ Blocked on Johnny (port 443) |
+| Onboarding CLI | Replaced by wizard — not needed | ⛔ Superseded |
 | Customer docs | Getting Started guide | ❌ Not started |
 
 ## Open Threads
 
-1. **Deploy with full test gate** — verify 837/0 green after db.create_all fix
-2. **Full click-through** — all new pages need real-user testing before customer install
-3. **Group chat message** — deployment readiness needs (TLS, DNS, Tom's builds, Andrew's Mori)
-4. **TLS proxy** — Caddy in Docker Compose, Johnny opens 443, DNS records
-5. **Onboarding CLI** — flask onboard --org --frameworks --admin-email
-6. **Tom's apps posture transition** — innovation → operational, fresh baselines
-7. **heymarcus.ai** — investigate product overlap with MARCUS name
-8. **Customer-facing docs** — rework User's Guide for external audience
-9. **HELM external connectivity** — test health check + config push over public URL
-10. **SQLAlchemy Query.get() warnings** — 469+ warnings, one root cause, mechanical cleanup
+1. **Pete test the wizard + guided path** — needs real human clicking through waldo-template
+2. **TLS for Lab** — Johnny opens port 443, then Caddy config
+3. **Data isolation statement** — enterprise customers will ask
+4. **HELM external connectivity test** — register a public URL instance, verify health check works
+5. **Pete sending Feynman + Library of Alexandria** — tonight
+6. **Tom's builds** — which are production-ready
+7. **Andrew's telemetry key** — Mori hitting 401s on /api/v1/telemetry/batch
+8. **Query.get() warnings cleanup** — 87 warnings, mechanical FRED spec
+9. **Cost v2 summary on template** — need to verify fix carried over in sync
+10. **heymarcus.ai** — investigate product overlap with MARCUS name
+11. **Governance posture change** — cis2 innovation → operational
 
 ## Repo State
 
 | Repo | HEAD | Status |
 |------|------|--------|
-| waldo-cis2 | f8a1df1 (trust test fix) | Deployed (--skip-tests), gate pending |
+| waldo-cis2 | eeaf9b9 (cost + conformance fix) | Deployed, 837/0 green |
+| waldo-template | batch4 restore complete | Full parity, wizard + guided onboarding |
 | waldo-mcp-gateway | CT 113, 4 tools proven | Live |
-| helm | waldo-vm:5001 | Live |
+| helm | waldo-vm:5001 | Live, deployment-ready |
 | Marcus-Mori | this push | Current |
 
 ## Lab Topology
@@ -75,5 +75,9 @@ CUSTODY framework integration (QMS seed + agent profiling L×M×R on components)
 
 ## Context Persistence
 Primary: MissingLinkThag/Marcus-Mori repo (pillars/ + session_summaries/).
-Supabase KB reader: NOT connected on desktop surface.
+Supabase KB reader: NOT connected on desktop surface. Connected on Kindo surface.
 Google Drive: connected but file locations unknown.
+
+---
+## Archive Pointer
+Full pre-slim history (to v43): archive/supabase_domain_full_2026-08-04.md (MissingLinkThag/Marcus-Mori). Sessions 96-142 detail: pillars/context_index_archive.md. Pull on demand.
