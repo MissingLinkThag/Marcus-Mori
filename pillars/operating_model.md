@@ -26,8 +26,8 @@ Data loss risk is the dividing line. Destructive actions require confirmation. R
 
 ## Spec-as-Delegation Rules (session 150 addition)
 - JSON spec in repo root + plain-text prompt under 2000 chars
-- UI specs MUST include exact url_for route mapping tables, not display names (lesson: session 150 nav redesign dropped 17 routes because spec listed names not routes)
-- Critical behavioral changes need line-level insertion point precision, not just desired outcome descriptions
+- UI specs MUST include exact url_for route mapping tables, not display names
+- Critical behavioral changes need line-level insertion point precision
 - FRED cannot execute or observe a running app -- scope ends at committed code, verification is Marcus/Mori
 
 ## Proxmox Lab Constraints (SOP-011)
@@ -44,15 +44,21 @@ Data loss risk is the dividing line. Destructive actions require confirmation. R
 - **irc-lab-db** (CT 101): 192.168.60.11, PostgreSQL 16, databases: marcus (WALDO), helm
 - **waldo-gateway** (CT 113): 192.168.60.40, MCP Gateway at :8000, hardened (fail-closed auth)
 - **morwen-mcp** (CT 106): 192.168.60.20, Andrew's MCP servers (6 connected to gateway)
-- WALDO deploy: `./deploy-lab.sh` (pull+build+test+deploy+health)
+- WALDO deploy: `docker compose down && docker compose up -d --build` (from ~/apps/waldo-cis2 on waldo-vm)
 - Gateway deploy: `cd /opt/waldo-mcp-gateway && git pull && docker compose down && docker compose up -d --build`
-- SSH from Windows: marcus@192.168.60.12 (ed25519 key)
-- SSH to gateway: root@192.168.60.40 (from waldo-vm or Windows)
-- Windows clone: C:\Users\Cram\Projects\waldo-cis2-deploy (write access to GitHub, used for pushes when VM deploy key is read-only)
+- SSH from Xeon (Dell Precision 7760): `ssh waldo-vm` (ed25519 key, passphraseless, ~/.ssh/id_ed25519_proxmox)
+- Marcus SSHs ONLY to waldo-vm. Reaches gateway/HELM/DB through waldo-vm over Lab network. Never SSHs to Proxmox host .5 directly.
 
-## Gateway Auth Architecture (session 150)
-- WALDO_API_KEY in gateway .env authenticates to WALDO (Authorization: Bearer header)
-- GATEWAY_PLUGIN_KEY in gateway .env authenticates external callers (governance + M365 routes)
+## Gateway Auth Architecture (session 158)
+- Gateway governance tools use `X-API-Key` header to WALDO (fixed session 158, was Authorization: Bearer)
+- Gateway telemetry flush prefers `WALDO_TELEMETRY_API_KEY` env var, falls back to `WALDO_API_KEY`
+- GATEWAY_PLUGIN_KEY authenticates external callers (governance + M365 routes)
 - Fail-closed: no GATEWAY_PLUGIN_KEY = all governance/M365 requests rejected (403)
-- MCP proxy routes use separate require_auth (identity-based, from auth.py)
 - WALDO_GATEWAY_COMPONENT_ID = 5b647c1b-9223-4513-a9ae-9fcef5d8a8fc
+- Cloudflare tunnel on CT 113 provides public HTTPS access without firewall changes
+
+## Context Persistence & Fallback (STANDING RULE)
+Supabase is PRIMARY source of truth (pillars + KB). MissingLinkThag/Marcus-Mori is the designated primary BACKUP. If Supabase unreachable, fall back to repo. Flag outage, proceed, reconcile when reachable.
+
+## Supabase Access — FULL READ + WRITE
+Six RPC functions: read_all_pillars, read_pillar, update_pillar, read_kb_index, read_kb_entry, write_kb_entry. All callable via HTTP POST to /rest/v1/rpc/<name> with apikey + service-role bearer. Project: arhdrvzpagkwqlbwsafo.
