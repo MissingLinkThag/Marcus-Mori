@@ -4,16 +4,8 @@
 
 ---
 
-## AIMS NextGen Programme
-- **Structure:** AIMS 2.10 (current, in force) → AIMS 3.0 (bridge, TRB review) → AIMS 4.0 (target, lean register)
-- **114 AIMSREQs** across 7 PDCA domains covering 11 regulatory frameworks
-- **Go-live: NLT December 2026**
-- **Roles:** Marcus (AIMS Author, QA), Kristen Gauthier (Tier 2 Lead), Jaspreet Gill (PM), Steve Black (CM)
-
-## Aireon 3.0 SQA
-- **105 SCR entries.** 57 require FMEA. 48 COTS/other.
-- **Three-tier QA model** per SI-A, CCR-4822
-- **Active NCs:** NC-574, NC-575, NC-576, NC-577
+## Aireon (ARCHIVED — past work, not current domain)
+Marcus's former Aireon QA/compliance work (AIMS NextGen programme, Aireon 3.0 SQA, the SCRs/FMEAs, NCs NC-574/575/576/577, EASA/Jira custom fields) is PAST and moved out of live domain. Full detail in the Marcus-Mori archive (`archive/supabase_domain_full_2026-08-04.md`). Not current work — do not treat as active, do not use any Aireon identity/email.
 
 ## KinHelm (The Company + Product Suite)
 - **KinHelm = the company.** Public site: kinhelm.ai.
@@ -53,10 +45,22 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **Cost Redesign:** Cost as telemetry dimension, per-skill/session/model/server attribution, flat-rate pricing for M365 Copilot
 - **Alignment Review:** 5 failure modes, grade multipliers through correctness formula
 
-### WALDO Module Count (session 150)
-- 35+ route files, 20+ service files, 831 tests
-- Nav: 5 buyer-facing dropdown groups (Ecosystem/Activity/Governance/Compliance/Organization) + gear icon for system tools
-- AI Panorama (dashboard) accessed via logo, not in nav
+### WALDO Auth Architecture (session 158)
+
+**Global login gate:** `_require_login` `before_request` in `app/__init__.py`. Exemptions:
+- Endpoints starting with `"api."` (the `api` blueprint)
+- Endpoints containing `".api_"` (any blueprint's API endpoints following the naming convention)
+- Endpoints in `_PUBLIC_ENDPOINTS` set
+- Static file endpoints
+
+**API key auth:** `@require_api_key` decorator checks `X-API-Key` header first, then `Authorization: Bearer`. Validates against `WALDO_TELEMETRY_API_KEY` env var. Used on all externally-callable API endpoints.
+
+**User identity resolution (session 158):**
+- On `start_session`, if `user_uuid` + `metadata.user_email` provided:
+  - Fast path: lookup by `external_uuid` on User model
+  - Fallback: lookup by email, stores `external_uuid` for future fast-path
+  - No auto-creation of users
+- `external_uuid` column on User model (VARCHAR(36), unique, indexed, schema patch 47)
 
 ### Key Architecture Rules (unchanged)
 - Deterministic core, AI at the edges
@@ -74,7 +78,38 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **3 governance MCP tools NOT BUILT:** waldo_authorize_skill, waldo_get_authorized_skills, waldo_get_constraints (blocked on Andrew)
 - **M365 Copilot Plugin:** OpenAPI plugin at /plugins/m365/ with ai-plugin.json + openapi.yaml. 4 routes wrapping same WALDO APIs.
 - **Hardened:** fail-closed auth (GATEWAY_PLUGIN_KEY), CORS, error sanitization, metadata from env vars
-- **Auth:** Authorization: Bearer header to WALDO. WALDO_API_KEY + WALDO_GATEWAY_COMPONENT_ID in .env.
+- **Auth:** X-API-Key header to WALDO (fixed session 158, was Bearer). WALDO_API_KEY + WALDO_GATEWAY_COMPONENT_ID in .env. Telemetry flush prefers WALDO_TELEMETRY_API_KEY env var.
+- **Cloudflare tunnel:** Quick tunnel running in tmux on CT 113. Current URL: `https://oct-deleted-jay-providing.trycloudflare.com`. Rotates on restart. HTTPS by virtue of Cloudflare.
+
+## Morwen Telemetry Integration (session 157-158)
+- **Component ID:** d497ff62-2803-41c8-bf4e-10466c05da60 (registered in CIS2 as GovernedComponent)
+- **Type:** Agent, EXTERNAL, T2 High, Innovation posture, Active
+- **Owner:** Andrew Fedele / KinHelm
+- **CUSTODY Profile:** Capability L5, Mandate Operational, Reach R3
+- **Telemetry path:** Direct to CIS2 (`http://192.168.60.12:5000`), NOT through gateway
+- **Auth:** `X-API-Key` header, key = `WALDO_TELEMETRY_API_KEY` env var on waldo-vm
+- **v2 endpoints:**
+  - `POST /v2/telemetry/api/session` — start session (NOT `/session/start`)
+  - `POST /v2/telemetry/api/session/<id>/end` — end session
+  - `POST /v2/telemetry/api/event` — structured event
+  - `GET /v2/telemetry/api/session/<id>` — get session
+- **User resolution:** `user_uuid` + `metadata.user_email` → matched to WALDO User record, `external_uuid` stored for fast-path
+- **Andrew's payload format:**
+```json
+{
+    "component_id": "d497ff62-...",
+    "user_uuid": "<supabase_uuid>",
+    "session_type": "interactive",
+    "metadata": {
+        "morwen_session_id": "<session_id>",
+        "surface": "desktop",
+        "agent": "MORWEN",
+        "user_email": "<user>@kinhelm.ai",
+        "auth_provider": "google"
+    }
+}
+```
+- **Status:** LIVE. Real events flowing, user identity resolved, governance loop closed.
 
 ## HELM (KinHelm Operations Console)
 - **Repo:** MissingLinkThag/helm
@@ -82,7 +117,6 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **Purpose:** Fleet management across customers. Instance registry, config push, health monitoring, ring toggles, 32 security controls.
 - **First instance:** waldo-cis2-lab (Product: WALDO, Client: KinHelm, healthy 4ms)
 - **Pete's pricing model:** Documented in docs/helm-evolution-petes-model.md. Agent pack management parked post-first-customer.
-- **Scope under Pete's model:** HELM = fleet (across customers), Kindra = per-product config (within one customer), Vilk/Ironsight = infra CMDB. Three layers, not competitors.
 
 ## Pete's Pricing Model (session 150)
 - Platform tiers by company size: Starter $48K, Professional $120K, Enterprise $250K, Enterprise+ $420K
@@ -98,26 +132,22 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **Layer 2:** Control/ControlMapping crosswalk. DEPLOYED but empty (no control content authored).
 - **Layer 3:** Merge resolution (deterministic draft, SME approve, auto-grade). DEPLOYED.
 - **Layer 4:** Combined view. NOT BUILT -- blocked on Controls content.
-- **Pass 1+2 complete** (21 core + 10 framework-specific clauses reviewed)
-- **Pass 3 not started** (93 ISO 27001 Annex A) -- parked on Pete
 
 ## Model Routing
 - **SOP-009 active.** Mid-Range preferred: Sonnet 4.6 specifically, NOT Sonnet 5.
 - **KPI target:** 5/70/15/10 (F/MR/S/L)
-- See loaded system prompt for full pricing table.
 
 ## Proxmox Lab
 - **SOP-011 constraints are LAW.** Only Johnny modifies firewall/port-forwards.
 - **Key hosts:** waldo-vm (.12), irc-lab-db (.11), waldo-gateway (.40), morwen-mcp (.20)
-- **Deploy path:** waldo-vm has read-only SSH deploy key (pull only). Write access via Windows clone (C:\Users\Cram\Projects\waldo-cis2-deploy) or Kindo GitHub tools.
+- **Deploy path:** waldo-vm has read-only SSH deploy key (pull only). Write access via Windows clone or Kindo GitHub tools.
 
 ## FRED / Studio
 - **Active Studio repo:** tom-rudolph/vibe-coder-githup-app (Kindo Studio v62+, agent v4.4.0)
 - **FRED commits direct to main by design** (session 120 reaffirmed). Verification via WALDO trust model, not pre-merge gate.
-- **Spec-as-delegation pattern:** JSON spec in repo root + plain-text prompt < 2000 chars. Established session 97, reliable ever since.
-- **Critical spec rule (learned session 150):** UI specs must include exact url_for route mapping tables, not display names. FRED can't guess which blueprint routes map to which nav items.
+- **Spec-as-delegation pattern:** JSON spec in repo root + plain-text prompt < 2000 chars.
+- **Critical spec rule (learned session 150):** UI specs must include exact url_for route mapping tables, not display names.
 
-## Jira Custom Fields
-- EASA Reportable: customfield_12439 | EASA Complete: customfield_13547
-- Start/End Time: customfield_12495/12496 | Duration: customfield_12440
-- Service Interruption: customfield_12492 | Security Impact: customfield_12457
+---
+## Archive Pointer
+Full pre-slim domain detail (to v43): archive/supabase_domain_full_2026-08-04.md (MissingLinkThag/Marcus-Mori). Pull on demand.
