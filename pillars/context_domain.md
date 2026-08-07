@@ -78,8 +78,38 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **3 governance MCP tools NOT BUILT:** waldo_authorize_skill, waldo_get_authorized_skills, waldo_get_constraints (blocked on Andrew)
 - **M365 Copilot Plugin:** OpenAPI plugin at /plugins/m365/ with ai-plugin.json + openapi.yaml. 4 routes wrapping same WALDO APIs.
 - **Hardened:** fail-closed auth (GATEWAY_PLUGIN_KEY), CORS, error sanitization, metadata from env vars
-- **Auth:** X-API-Key header to WALDO (fixed session 158, was Bearer). WALDO_API_KEY + WALDO_GATEWAY_COMPONENT_ID in .env. Telemetry flush prefers WALDO_TELEMETRY_API_KEY env var.
-- **Cloudflare tunnel:** Quick tunnel running in tmux on CT 113. Current URL: `https://oct-deleted-jay-providing.trycloudflare.com`. Rotates on restart. HTTPS by virtue of Cloudflare.
+- **Auth:** X-API-Key header to WALDO (fixed session 158). WALDO_API_KEY must match CIS2's WALDO_TELEMETRY_API_KEY (64-char key, fixed session 159). WALDO_GATEWAY_COMPONENT_ID in .env.
+- **Cloudflare tunnel:** Quick tunnel running in tmux on CT 113. Current URL: `https://oct-deleted-jay-providing.trycloudflare.com`. Rotates on restart.
+
+### MCP Server Transport (session 159 — commit 973cc6f, NOT YET DEPLOYED)
+
+Gateway now acts as an MCP server, not just a client/proxy. Any MCP-compatible client (Copilot Studio, Claude Desktop, Cursor) can connect to one URL and get governed access to all backend tools.
+
+**Endpoints:**
+- `GET /sse` — SSE endpoint, sends `event: endpoint` with message URL, 30s keepalive. Plugin auth required.
+- `POST /mcp/message?session_id={id}` — JSON-RPC 2.0 handler for `initialize`, `notifications/initialized`, `tools/list`, `tools/call`.
+
+**Tool naming:**
+- Backend server tools prefixed with `{server_id}__` (e.g. `github__create_issue`)
+- Governance tools prefixed with `governance__` (e.g. `governance__waldo_classify_data`)
+
+**Architecture:**
+```
+Any MCP client → /sse → /mcp/message → Gateway → Backend MCP servers
+                                              ↘ Governance tools (direct)
+```
+
+**KNOWN GAP (session 159 — spec needed):** Backend tool `inputSchema` uses permissive `{type: object}` fallback instead of real schemas from `ToolInfo.parameters`. This means the gateway does NOT validate tool call payloads before proxying — any payload reaches the backend. Marcus directed full-depth schema enforcement:
+1. **Advertise:** `tools/list` returns real `inputSchema` from `ToolInfo.parameters` (already populated by health monitor discovery)
+2. **Enforce:** `tools/call` validates `arguments` against stored schema via `jsonschema` BEFORE proxying. Invalid payloads get JSON-RPC `-32602 Invalid params`, never reach backend.
+3. **Open question:** Should validation failures also fire `reportError` to WALDO telemetry?
+
+### Gateway Registry Architecture (relevant to schema enforcement)
+- `ToolInfo` dataclass: `name: str`, `description: str`, `parameters: Dict[str, Any]` — parameters field ALREADY populated from backend `/admin/tools` discovery
+- `ServerEntry` dataclass: holds `tools: List[ToolInfo]` per server
+- `ServerRegistry.get_capability_index()` aggregates all tools from all healthy servers
+- `HealthMonitor._discover_tools()` extracts tool metadata including parameters from backend responses
+- The data for enforcement EXISTS in the registry — the MCP server just doesn't use it yet
 
 ## Morwen Telemetry Integration (session 157-158)
 - **Component ID:** d497ff62-2803-41c8-bf4e-10466c05da60 (registered in CIS2 as GovernedComponent)
@@ -94,21 +124,6 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
   - `POST /v2/telemetry/api/event` — structured event
   - `GET /v2/telemetry/api/session/<id>` — get session
 - **User resolution:** `user_uuid` + `metadata.user_email` → matched to WALDO User record, `external_uuid` stored for fast-path
-- **Andrew's payload format:**
-```json
-{
-    "component_id": "d497ff62-...",
-    "user_uuid": "<supabase_uuid>",
-    "session_type": "interactive",
-    "metadata": {
-        "morwen_session_id": "<session_id>",
-        "surface": "desktop",
-        "agent": "MORWEN",
-        "user_email": "<user>@kinhelm.ai",
-        "auth_provider": "google"
-    }
-}
-```
 - **Status:** LIVE. Real events flowing, user identity resolved, governance loop closed.
 
 ## HELM (KinHelm Operations Console)
@@ -141,6 +156,14 @@ Layer 5 -- Skill Lifecycle Management: Discovery, ingestion, distribution, drift
 - **SOP-011 constraints are LAW.** Only Johnny modifies firewall/port-forwards.
 - **Key hosts:** waldo-vm (.12), irc-lab-db (.11), waldo-gateway (.40), morwen-mcp (.20)
 - **Deploy path:** waldo-vm has read-only SSH deploy key (pull only). Write access via Windows clone or Kindo GitHub tools.
+
+## M365 Copilot Integration (session 158-159)
+- **Tenant:** marcus@kinhelmai.onmicrosoft.com (Business Standard + Copilot)
+- **Power Platform trials:** Power Apps Premium, Power Automate Premium, Copilot Studio — expire **September 5** (reminder Aug 29)
+- **Custom connector:** "WALDO Governance" imported from gateway openapi.yaml, 4 operations (classifyData, checkClearance, reportExecution, reportError)
+- **Power Automate test:** GREEN — checkClearance returned Marcus TS clearance in 652ms through full chain
+- **Copilot Studio agent:** "WALDO Governance Agent" created, Claude Sonnet 5 model, instructions written, 4 tools connected. Not yet tested in Preview.
+- **MCP direct connection:** Attempted but gateway had no /sse endpoint. Now built (973cc6f) but not deployed. After deploy + schema enforcement, MCP path is preferred over OpenAPI connector.
 
 ## FRED / Studio
 - **Active Studio repo:** tom-rudolph/vibe-coder-githup-app (Kindo Studio v62+, agent v4.4.0)
